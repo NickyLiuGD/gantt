@@ -46,13 +46,20 @@ export default class Bar {
             append_to: this.group,
         });
     }
+    parse_date(date_str) {
+        // if it's a pure date string (YYYY-MM-DD), interpret as UTC
+        if (/^\d{4}-\d{2}-\d{2}$/.test(date_str)) {
+            return new Date(date_str + 'T00:00:00Z');
+        }
+        return new Date(date_str);
+    }
 
     prepare_values() {
         this.invalid = this.task.invalid;
         this.height = this.gantt.options.bar_height;
         this.image_size = this.height - 5;
-        this.task._start = new Date(this.task.start);
-        this.task._end = new Date(this.task.end);
+        this.task._start = this.parse_date(this.task.start);
+        this.task._end = this.parse_date(this.task.end);
         this.compute_x();
         this.compute_y();
         this.compute_duration();
@@ -380,7 +387,7 @@ export default class Bar {
                 .classList.add('hide');
         });
 
-        $.on(this.group, 'click', () => {
+        $.on(this.group, 'click', (e) => {
             this.gantt.trigger_event('click', [this.task]);
         });
 
@@ -498,7 +505,6 @@ export default class Bar {
             changed = true;
             this.task._end = new_end_date;
         }
-
         if (!changed) return;
 
         this.gantt.trigger_event('date_change', [
@@ -530,7 +536,8 @@ export default class Bar {
             this.gantt.config.unit,
         );
 
-        const width_in_units = bar.getWidth() / this.gantt.config.column_width;
+        const width_in_units =
+            bar.getWidth() / this.gantt.config.column_width - 1;
         const new_end_date = date_utils.add(
             new_start_date,
             width_in_units * this.gantt.config.step,
@@ -614,9 +621,10 @@ export default class Bar {
     compute_duration() {
         let actual_duration_in_days = 0,
             duration_in_days = 0;
+
         for (
             let d = new Date(this.task._start);
-            d < this.task._end;
+            d <= new Date(this.task._end);
             d.setDate(d.getDate() + 1)
         ) {
             duration_in_days++;

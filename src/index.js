@@ -341,7 +341,11 @@ export default class Gantt {
         }
         this.config.date_format =
             this.config.view_mode.date_format || this.options.date_format;
-        this.gantt_start.setHours(0, 0, 0, 0);
+        this.gantt_start.setUTCHours(0, 0, 0, 0);
+    }
+
+    view_is(view) {
+        return this.options.view_mode.name === view;
     }
 
     setup_date_values() {
@@ -685,7 +689,7 @@ export default class Gantt {
      */
     highlight_current() {
         const res = this.get_closest_date();
-        if (!res) return;
+        if (!res || !res[1]) return;
 
         const [_, el] = res;
         el.classList.add('current-date-highlight');
@@ -781,7 +785,7 @@ export default class Gantt {
     }
 
     make_dates() {
-        this.get_dates_to_draw().forEach((date, i) => {
+        this.get_dates_to_draw().forEach((date) => {
             if (date.lower_text) {
                 let $lower_text = this.create_el({
                     left: date.x,
@@ -820,12 +824,9 @@ export default class Gantt {
     get_date_info(date, last_date_info) {
         let last_date = last_date_info ? last_date_info.date : null;
 
-        let column_width = this.config.column_width;
-
         const x = last_date_info
             ? last_date_info.x + last_date_info.column_width
             : 0;
-
         let upper_text = this.config.view_mode.upper_text;
         let lower_text = this.config.view_mode.lower_text;
 
