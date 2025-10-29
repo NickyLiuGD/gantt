@@ -119,6 +119,7 @@ const DEFAULT_OPTIONS = {
     lower_header_height: 30,
     snap_at: null,
     infinite_padding: true,
+    hover_on_date: false,
     holidays: { 'var(--g-weekend-highlight-color)': 'weekend' },
     ignore: [],
     language: 'en',

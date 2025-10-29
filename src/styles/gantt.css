@@ -323,7 +323,7 @@
     }
 
     & .bar-wrapper {
-            cursor: pointer;
+        cursor: pointer;
 
         & .bar {
             outline: 1px solid var(--g-row-border-color);
@@ -339,5 +339,14 @@
                 display: block;
             }
         }
+    }
+    .grid-column {
+        fill: transparent;
+        pointer-events: all;
+    }
+
+    .grid-column:hover {
+        fill:rgba(150, 150, 150, 0.05) !important;
+        transition: fill 0.1s ease;
     }
 }

@@ -642,20 +642,30 @@ export default class Gantt {
                         this.config.ignored_function(d))
                 )
                     continue;
-                if (check_highlight(d) || (extra_func && extra_func(d))) {
-                    const x =
-                        (date_utils.diff(
-                            d,
-                            this.gantt_start,
-                            this.config.unit,
-                        ) /
-                            this.config.step) *
-                        this.config.column_width;
-                    const height = this.grid_height - this.config.header_height;
-                    const d_formatted = date_utils
-                        .format(d, 'YYYY-MM-DD', this.options.language)
-                        .replace(' ', '_');
-
+                const is_holiday =
+                    check_highlight(d) || (extra_func && extra_func(d));
+                const x =
+                    (date_utils.diff(d, this.gantt_start, this.config.unit) /
+                        this.config.step) *
+                    this.config.column_width;
+                const height = this.grid_height - this.config.header_height;
+                const d_formatted = date_utils
+                    .format(d, 'YYYY-MM-DD', this.options.language)
+                    .replace(' ', '_');
+                const config = {
+                    x: Math.round(x),
+                    y: this.config.header_height,
+                    width:
+                        this.config.column_width /
+                        date_utils.convert_scales(
+                            this.config.view_mode.step,
+                            'day',
+                        ),
+                    height,
+                    append_to: this.layers.grid,
+                };
+                let column;
+                if (is_holiday) {
                     if (labels[d]) {
                         let label = this.create_el({
                             classes: 'holiday-label ' + 'label_' + d_formatted,
@@ -663,25 +673,39 @@ export default class Gantt {
                         });
                         label.textContent = labels[d];
                     }
-                    createSVG('rect', {
-                        x: Math.round(x),
-                        y: this.config.header_height,
-                        width:
-                            this.config.column_width /
-                            date_utils.convert_scales(
-                                this.config.view_mode.step,
-                                'day',
-                            ),
-                        height,
-                        class: 'holiday-highlight ' + d_formatted,
+                    column = createSVG('rect', {
+                        ...config,
+                        class:
+                            'holiday-highlight ' +
+                            d_formatted +
+                            (this.options.hover_on_date ? ' grid-column' : ''),
                         style: `fill: ${color};`,
                         append_to: this.layers.grid,
+                    });
+                } else if (this.options.hover_on_date) {
+                    column = createSVG('rect', {
+                        ...config,
+                        class: 'grid-column',
                     });
                 }
             }
         }
     }
 
+    getDateFromClick(event) {
+        const rect = this.$svg.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const columns = this.lowerTexts;
+        if (!columns.length) return null;
+
+        const index = Math.floor(x / this.config.column_width);
+        const targetCell = columns[index];
+        console.log(this.options);
+        if (!targetCell) return null;
+
+        const match = targetCell.className.match(/date_(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : null;
+    }
     /**
      * Compute the horizontal x-axis distance and associated date for the current date and view.
      *
@@ -808,6 +832,9 @@ export default class Gantt {
         });
         this.upperTexts = Array.from(
             this.$container.querySelectorAll('.upper-text'),
+        );
+        this.lowerTexts = Array.from(
+            this.$container.querySelectorAll('.lower-text'),
         );
     }
 
@@ -1113,6 +1140,9 @@ export default class Gantt {
                 Math.abs((e.offsetX || e.layerX) - pos) > 10
             )
                 this.bar_being_dragged = true;
+        });
+        $.on(this.$svg, 'mousedown', '.grid-column', (e) => {
+            this.trigger_event('date_click', [this.getDateFromClick(e)]);
         });
 
         $.on(this.$svg, 'mousedown', '.bar-wrapper, .handle', (e, element) => {
